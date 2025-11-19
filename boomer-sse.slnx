@@ -8,4 +8,6 @@
     <File Path="README.md" />
     <File Path=".gitignore" />
   </Folder>
+  <Project Path="demo/BoomerSse.Demo/BoomerSse.Demo.csproj" />
+  <Project Path="src/BoomerSse/BoomerSse.csproj" />
 </Solution>
