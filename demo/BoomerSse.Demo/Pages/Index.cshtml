@@ -5,3 +5,21 @@
 }
 
 <h2>Hurro</h2>
+<p>
+    <button data-bsse-onclick="main_button_clicked">Click me</button>
+    <button data-bsse-onclick="main_button_clicked|@DateTime.UtcNow">Or me</button>
+</p>
+<form data-bsse-onsubmit="main_form_submitted">
+    <p>
+        <label for="prop1">Prop 1</label><br/>
+        <input type="text" name="prop1" id="prop1"/>
+    </p>
+    <p>
+        <label for="prop2">Prop 1</label><br/>
+        <select name="prop2" id="prop2">
+            <option>Option 1</option>
+            <option>Option 2</option>
+        </select>
+    </p>
+    <p><button type="submit">Submit</button></p>
+</form>
