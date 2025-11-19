@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-const getEventData = (el, propName) => {
+const buildEventData = (el, propName, data) => {
     const dataSetValue = el.dataset[propName];
 
     if (!dataSetValue) {
@@ -15,9 +15,11 @@ const getEventData = (el, propName) => {
         return undefined;
     }
 
-    const data = splitValues.length > 1
-        ? splitValues[1]
-        : null;
+    if (!data) {
+        data = splitValues.length > 1
+            ? splitValues[1]
+            : null;
+    }
 
     return {
         event: splitValues[0],
@@ -25,22 +27,59 @@ const getEventData = (el, propName) => {
     };
 };
 
-const bindOnLoad = (el) => {
-    const eventData = getEventData(el, "bsseOnload");
+const raiseEvent = (eventData) => {
     console.log(eventData);
+    // todo: POST data to endpoint configured via middleware
+};
+
+const bindOnLoad = (el) => {
+    el.addEventListener("load", e => {
+        e.preventDefault();
+
+        raiseEvent(
+            buildEventData(el, "bsseOnload")
+        );
+    });
 };
 
 const bindOnClick = (el) => {
-    const eventData = getEventData(el, "bsseOnclick");
-    console.log(eventData);
+    el.addEventListener("click", e => {
+        e.preventDefault();
+
+        raiseEvent(
+            buildEventData(el, "bsseOnclick")
+        );
+    });
+
 };
 
 const bindOnSubmit = (el) => {
-    const eventData = getEventData(el, "bsseOnsubmit");
-    console.log(eventData);
+    el.addEventListener("submit", e => {
+        e.preventDefault();
+
+        const formData = new FormData(el);
+        const formObject = {};
+
+        formData.forEach((value, key) => {
+            if (formObject.hasOwnProperty(key)) {
+                if (!Array.isArray(formObject[key])) {
+                    formObject[key] = [formObject[key]];
+                }
+                formObject[key].push(value);
+            } else {
+                formObject[key] = value;
+            }
+        });
+
+        raiseEvent(
+            buildEventData(el, "bsseOnsubmit", formObject)
+        );
+    });
 };
 
 const init = () => {
+    window.BSSE_PATHBASE = window.BSSE_PATHBASE || '';
+    window.BSSE_SESSION_ID = crypto.randomUUID();
 
     const onLoadElements = document.querySelectorAll("[data-bsse-onload]");
     const onClickElements = document.querySelectorAll("[data-bsse-onclick]");
