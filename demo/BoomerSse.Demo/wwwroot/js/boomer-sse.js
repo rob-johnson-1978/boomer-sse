@@ -11,7 +11,7 @@ const buildEventData = (el, propName, data) => {
     const splitValues = dataSetValue.split('|');
 
     if (!splitValues || splitValues.length < 1 || !splitValues[0] || splitValues[0].length < 1) {
-        console.warn(`Dataset value is invalid ${dataSetValue}`);
+        console.warn(`Dataset value is invalid: ${dataSetValue}`);
         return undefined;
     }
 
@@ -28,18 +28,30 @@ const buildEventData = (el, propName, data) => {
 };
 
 const raiseEvent = (eventData) => {
-    console.log(eventData);
-    // todo: POST data to endpoint configured via middleware
+    if (!eventData) {
+        return;
+    }
+
+    const url = `${window.BSSE_PATHBASE}/bsse/receive-client-event?session_id=${window.BSSE_SESSION_ID}`;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${window.BSSE_GET_TOKEN()}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(eventData),
+        credentials: 'include'
+    })
+        .catch(error => {
+            console.error(`Error posting`)
+        });
 };
 
-const bindOnLoad = (el) => {
-    el.addEventListener("load", e => {
-        e.preventDefault();
-
-        raiseEvent(
-            buildEventData(el, "bsseOnload")
-        );
-    });
+const bindOnReady = (el) => {
+    raiseEvent(
+        buildEventData(el, "bsseOnready")
+    );
 };
 
 const bindOnClick = (el) => {
@@ -72,22 +84,60 @@ const bindOnSubmit = (el) => {
         });
 
         raiseEvent(
-            buildEventData(el, "bsseOnsubmit", formObject)
+            buildEventData(el, "bsseOnsubmit", JSON.stringify(formObject))
         );
     });
 };
+
+const bindOnLoad = (el) => {
+    el.addEventListener("load", e => {
+       e.preventDefault();
+       
+       raiseEvent(
+            buildEventData(el, "bsseOnload")  
+       );
+    });
+};
+
+const bindPublishers = topLevelElement => {
+    const onReadyElements = topLevelElement.querySelectorAll("[data-bsse-onready]");
+    const onClickElements = topLevelElement.querySelectorAll("[data-bsse-onclick]");
+    const onSubmitElements = topLevelElement.querySelectorAll("form[data-bsse-onsubmit]");
+    const onLoadElements = topLevelElement.querySelectorAll("[data-bsse-onload]");
+
+    if (topLevelElement.hasAttribute) {
+        if (topLevelElement.hasAttribute("data-bsse-ready")) {
+            onReadyElements.push(topLevelElement);
+        }
+
+        if (topLevelElement.hasAttribute("data-bsse-click")) {
+            onClickElements.push(topLevelElement);
+        }
+
+        if (topLevelElement.hasAttribute("data-bsse-submit")) {
+            onSubmitElements.push(topLevelElement);
+        }
+
+        if (topLevelElement.hasAttribute("data-bsse-onload")) {
+            onLoadElements.push(topLevelElement);
+        }
+    }
+
+    onReadyElements.forEach(bindOnReady);
+    onClickElements.forEach(bindOnClick);
+    onSubmitElements.forEach(bindOnSubmit);
+    onLoadElements.forEach(bindOnLoad);
+}
 
 const init = () => {
     window.BSSE_PATHBASE = window.BSSE_PATHBASE || '';
     window.BSSE_SESSION_ID = crypto.randomUUID();
 
-    const onLoadElements = document.querySelectorAll("[data-bsse-onload]");
-    const onClickElements = document.querySelectorAll("[data-bsse-onclick]");
-    const onSubmitElements = document.querySelectorAll("form[data-bsse-onsubmit]");
+    if (!window.BSSE_GET_TOKEN) {
+        window.BSSE_GET_TOKEN = () => "";
+    }
 
-    onLoadElements.forEach(bindOnLoad);
-    onClickElements.forEach(bindOnClick);
-    onSubmitElements.forEach(bindOnSubmit);
+    bindPublishers(document);
 };
 
 window.addEventListener("DOMContentLoaded", () => {

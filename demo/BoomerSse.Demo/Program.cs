@@ -1,3 +1,5 @@
+using BoomerSse;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -22,5 +24,7 @@ app.UseAuthorization();
 app.MapStaticAssets();
 app.MapRazorPages()
     .WithStaticAssets();
+
+app.UseBoomerSse();
 
 app.Run();
