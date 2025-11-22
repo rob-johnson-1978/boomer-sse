@@ -9,5 +9,8 @@
     <File Path=".gitignore" />
   </Folder>
   <Project Path="demo/BoomerSse.Demo/BoomerSse.Demo.csproj" />
+  <Project Path="src/BoomerSse.Abstractions/BoomerSse.Abstractions.csproj" />
+  <Project Path="src/BoomerSse.InMemory/BoomerSse.InMemory.csproj" />
+  <Project Path="src/BoomerSse.Redis/BoomerSse.Redis.csproj" />
   <Project Path="src/BoomerSse/BoomerSse.csproj" />
 </Solution>

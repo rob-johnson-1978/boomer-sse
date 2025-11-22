@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace BoomerSse;
+namespace BoomerSse.Abstractions;
 
 public record ClientEventBody(
     [property: JsonPropertyName("event")] string Event,

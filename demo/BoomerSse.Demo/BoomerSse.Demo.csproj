@@ -70,6 +70,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\BoomerSse.InMemory\BoomerSse.InMemory.csproj" />
+      <ProjectReference Include="..\..\src\BoomerSse.Redis\BoomerSse.Redis.csproj" />
       <ProjectReference Include="..\..\src\BoomerSse\BoomerSse.csproj" />
     </ItemGroup>
 
