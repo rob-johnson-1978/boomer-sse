@@ -2,7 +2,8 @@
 HATEOS and SSE for .NET (Boomers only)
 
 ## What is boomer-sse?
-boomer-sse is a .NET library, and a JavaScript library
+boomer-sse is a .NET library (with a companion JavaScript 
+library)
 which encourages you to use HATEOS and 
 Server-Sent Events (SSE) in a loosely-coupled and 
 reactive way.
