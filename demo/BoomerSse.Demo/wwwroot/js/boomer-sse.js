@@ -32,7 +32,7 @@ const raiseEvent = (eventData) => {
         return;
     }
 
-    const url = `${window.BSSE_PATHBASE}/bsse/receive-client-event?session_id=${window.BSSE_SESSION_ID}`;
+    const url = `${window.BSSE_PATHBASE}/bsse/sub?session_id=${window.BSSE_SESSION_ID}`;
 
     fetch(url, {
         method: 'POST',
@@ -91,11 +91,11 @@ const bindOnSubmit = (el) => {
 
 const bindOnLoad = (el) => {
     el.addEventListener("load", e => {
-       e.preventDefault();
-       
-       raiseEvent(
-            buildEventData(el, "bsseOnload")  
-       );
+        e.preventDefault();
+
+        raiseEvent(
+            buildEventData(el, "bsseOnload")
+        );
     });
 };
 
@@ -129,6 +129,17 @@ const bindPublishers = topLevelElement => {
     onLoadElements.forEach(bindOnLoad);
 }
 
+const openSseConnection = () => {
+    const url = `${window.BSSE_PATHBASE}/bsse/sub?session_id=${window.BSSE_SESSION_ID}`;
+
+    const eventSource = new EventSource(url, {
+        withCredentials: true,
+        headers: {
+            'Authorization': `Bearer ${window.BSSE_GET_TOKEN()}`
+        }
+    });
+}
+
 const init = () => {
     window.BSSE_PATHBASE = window.BSSE_PATHBASE || '';
     window.BSSE_SESSION_ID = crypto.randomUUID();
@@ -138,6 +149,7 @@ const init = () => {
     }
 
     bindPublishers(document);
+    openSseConnection();
 };
 
 window.addEventListener("DOMContentLoaded", () => {

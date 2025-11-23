@@ -22,7 +22,11 @@ public static class Bootstrapping
     public static WebApplication UseBoomerSse(this WebApplication app)
     {
         app
-            .MapPost("/bsse/receive-client-event", RequestHandlers.ReceiveClientEvent)
+            .MapPost("/bsse/pub", RequestHandlers.Pub)
+            .RequireAuthorization();
+
+        app
+            .MapGet("/bsse/sub", RequestHandlers.Sub)
             .RequireAuthorization();
 
         return app;

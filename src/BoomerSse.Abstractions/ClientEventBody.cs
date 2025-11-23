@@ -2,7 +2,7 @@
 
 namespace BoomerSse.Abstractions;
 
-public record ClientEventBody(
+public sealed record ClientEventBody(
     [property: JsonPropertyName("event")] string Event,
     [property: JsonPropertyName("data")] string? Data
 );

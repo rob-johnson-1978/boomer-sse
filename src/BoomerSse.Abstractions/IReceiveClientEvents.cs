@@ -2,5 +2,5 @@
 
 public interface IReceiveClientEvents
 {
-    Task Receive(Guid sessionId, ClientEventBody clientEventBody);
+    Task Receive(Guid sessionId, ClientEventBody clientEventBody, CancellationToken cancellationToken);
 }

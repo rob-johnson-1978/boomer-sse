@@ -14,10 +14,9 @@ public class ClientEventManager : IReceiveClientEvents
 
     public static ClientEventManager Instance { get; } = new();
     
-    public async Task Receive(Guid sessionId, ClientEventBody clientEventBody)
+    public async Task Receive(Guid sessionId, ClientEventBody clientEventBody, CancellationToken cancellationToken)
     {
-        // todo: some kind of streaming solution
-        // it can't just be a ConcurrentDictionary<Guid, List<ClientEventBody>> because of potential memory overflow
-        // needs to be a stream/queue/channel etc
+        // todo: put message on inmem queue?
+        throw new NotImplementedException();
     }
 }
