@@ -39,14 +39,14 @@ public class BoomerSseOptions
 
         var clientEventReceiver = _hostApplicationBuilder
             .Services
-            .SingleOrDefault(x=>x.ServiceType == typeof(IReceiveClientEvents));
+            .SingleOrDefault(x => x.ServiceType == typeof(IReceiveClientEvents));
 
         if (clientEventReceiver == null)
         {
             throw new InvalidOperationException(
                 $"Strategy '{_scaleOutStrategy.GetType()}' " +
                 $"does not register {nameof(IReceiveClientEvents)} in the container " +
-                $"during it's {nameof(IDecideScaleOutStrategy.Configure)} method"
+                $"during its {nameof(IDecideScaleOutStrategy.Configure)} method"
             );
         }
     }
