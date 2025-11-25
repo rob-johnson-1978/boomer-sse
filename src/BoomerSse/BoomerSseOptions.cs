@@ -1,4 +1,5 @@
-﻿using BoomerSse.Abstractions;
+﻿using System.Reflection;
+using BoomerSse.Abstractions;
 using Microsoft.Extensions.Hosting;
 
 namespace BoomerSse;
@@ -27,6 +28,29 @@ public class BoomerSseOptions
 
         return this;
     }
+    
+    public BoomerSseOptions AddClientEventHandler<TEvent, TEventHandler>()
+        where TEvent : class
+        where TEventHandler : IHandleClientEvents<TEvent>
+    {
+        // todo: register
+        return this;
+    }
+    
+    public BoomerSseOptions AddSynchronousClientEventHandler<TEvent, TEventHandler>()
+        where TEvent : class
+        where TEventHandler : IHandleClientEventsSynchronously<TEvent>
+    {
+        // todo: register
+        return this;
+    }
+    
+    public BoomerSseOptions ScanAssemblyForClientEventHandlers(Assembly assembly)
+    {
+        // todo: find handlers, both static and non, both async and sync
+        
+        return this;
+    }
 
     internal void Validate()
     {
@@ -46,6 +70,19 @@ public class BoomerSseOptions
             throw new InvalidOperationException(
                 $"Strategy '{_scaleOutStrategy.GetType()}' " +
                 $"does not register {nameof(IReceiveClientEvents)} in the container " +
+                $"during its {nameof(IDecideScaleOutStrategy.Configure)} method"
+            );
+        }
+        
+        var serverEventReceiver = _hostApplicationBuilder
+            .Services
+            .SingleOrDefault(x => x.ServiceType == typeof(IReceiveServerEvents));
+
+        if (serverEventReceiver == null)
+        {
+            throw new InvalidOperationException(
+                $"Strategy '{_scaleOutStrategy.GetType()}' " +
+                $"does not register {nameof(IReceiveServerEvents)} in the container " +
                 $"during its {nameof(IDecideScaleOutStrategy.Configure)} method"
             );
         }

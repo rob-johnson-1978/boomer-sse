@@ -1,5 +1,5 @@
 using BoomerSse;
-using BoomerSse.Abstractions;
+using BoomerSse.Demo;
 using BoomerSse.InMemory;
 using BoomerSse.Redis;
 
@@ -12,29 +12,24 @@ builder.UseBoomerSse(options =>
     switch (Environment.GetEnvironmentVariable("BSSE_SCALEOUT"))
     {
         case "InMemory":
-            options.UseScaleOutStrategy(new InMemoryScaleOutStrategy());
+            options
+                .UseScaleOutStrategy(new InMemoryScaleOutStrategy())
+                .AddClientEventHandler<SomethingClassicHappened, SomethingClassicHappenedEventHandler>()
+                .AddSynchronousClientEventHandler<SomethingClassicSyncHappened, SomethingClassicSyncHappenedEventHandler>();
             break;
         case "Redis":
             options.UseScaleOutStrategy(new RedisScaleOutStrategy());
+            options.ScanAssemblyForClientEventHandlers(typeof(Program).Assembly); // todo: add static methods (async and sync, no DI - useful for simple tasks eg redirect)
             break;
         default:
             throw new InvalidOperationException("Unknown value for BSSE_SCALEOUT.");
     }
 
-    // todo: scan for static methods, and full classes, public and internal
-    // register in provider or container / provider
-    // full classes will need different type of handling as be registered in the container
-    options.ScanAssemblyForClientEventHandlers(typeof(Program).Assembly);
+    // todo: scan for both types of event handler
+    
     
     // todo: register in container / provider
-    options.AddEventHandler<SomethingHappened, SomethingHappenedEventHandler>();
-
-    // todo: register in provider only
-    options.AddEventHandler(nameof(SomethingElseHappened), static async (clientEvenBody, cancellationToken) =>
-    {
-        await Task.CompletedTask;
-        return new ServerEventBody(); // todo: needs properties
-    });
+    
 });
 
 var app = builder.Build();

@@ -16,7 +16,7 @@ public class ClientEventHandler
     public static ClientEventHandler Instance { get; } = new();
 
     public async Task<ImmutableArray<ServerEventBody>> Handle(
-        ClientEventBody clientEventBody, 
+        ClientEventBody clientEventBody,
         CancellationToken cancellationToken)
     {
         // todo: probably need more params here - eg IServiceProvider? Or scoped service provider?
