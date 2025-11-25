@@ -2,7 +2,15 @@
 
 public interface IReceiveClientEvents
 {
-    Task Receive(Guid sessionId, ClientEventBody clientEventBody, CancellationToken cancellationToken);
+    Task ReceiveClientEvent(
+        Guid sessionId, 
+        ClientEventBody clientEventBody, 
+        CancellationToken cancellationToken
+    );
 
-    Task SubscribeToReceivedEvents(Guid sessionId, CancellationToken cancellationToken);
+    Task SubscribeToClientEvents(
+        Guid sessionId, 
+        Func<ClientEventBody, Task> onClientEventReceived, 
+        CancellationToken cancellationToken
+    );
 }

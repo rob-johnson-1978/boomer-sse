@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.ServerSentEvents;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
 namespace BoomerSse;
@@ -14,52 +15,112 @@ internal class RequestHandlers
         [FromBody] ClientEventBody clientEventBody,
         CancellationToken cancellationToken)
     {
-        await clientEventReceiver.Receive(sessionId, clientEventBody, cancellationToken);
+        await clientEventReceiver.ReceiveClientEvent(sessionId, clientEventBody, cancellationToken);
 
         return Results.Accepted();
     }
 
     internal static async Task<IResult> Sub(
         [FromServices] IReceiveClientEvents clientEventReceiver,
+        [FromServices] IReceiveServerEvents serverEventReceiver,
+        [FromServices] ClientEventHandler clientEventHandler,
         [FromQuery(Name = "session_id")] Guid sessionId,
         CancellationToken cancellationToken)
     {
-        // todo:
-        // 1. setup a client event handler
-        // 2. subscribe to the client event and forward to the handler
-        // 3. onHandled, yield the server events from the yielder
+        var clientEventHandlingChannel = Channel.CreateUnbounded<ClientEventBody>();
+        var serverEventYieldingChannel = Channel.CreateUnbounded<SseItem<ServerEventBody>>();
 
-        var yieldChannel = Channel.CreateUnbounded<SseItem<ServerEventBody>>();
-
-        return TypedResults.ServerSentEvents(
-            Yield()
+        await clientEventReceiver.SubscribeToClientEvents(
+            sessionId,
+            async clientEventBody =>
+            {
+                await clientEventHandlingChannel
+                    .Writer
+                    .WriteAsync(clientEventBody, cancellationToken);
+            },
+            cancellationToken
         );
 
-        // -------------------------------- //
+        _ = Task.Run(async () => 
+            await HandleClientEvents(
+                sessionId, 
+                clientEventHandlingChannel, 
+                clientEventHandler,
+                serverEventReceiver,
+                cancellationToken
+            ), cancellationToken
+        );
 
-        async IAsyncEnumerable<SseItem<ServerEventBody>> Yield()
+        await serverEventReceiver.SubscribeToServerEvents(
+            sessionId,
+            async serverEventBody =>
+            {
+                await serverEventYieldingChannel
+                    .Writer
+                    .WriteAsync(
+                        new SseItem<ServerEventBody>(serverEventBody),
+                        cancellationToken
+                    );
+            },
+            cancellationToken
+        );
+
+        return TypedResults.ServerSentEvents(
+            Yield(serverEventYieldingChannel, cancellationToken)
+        );
+    }
+
+    private static async Task HandleClientEvents(Guid sessionId,
+        Channel<ClientEventBody> clientEventHandlingChannel,
+        ClientEventHandler clientEventHandler,
+        IReceiveServerEvents serverEventReceiver,
+        CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                if (!await clientEventHandlingChannel.Reader.WaitToReadAsync(cancellationToken))
                 {
-                    if (!await yieldChannel.Reader.WaitToReadAsync(cancellationToken))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    while (yieldChannel.Reader.TryRead(out var sseItem))
-                    {
-                        yield return sseItem;
-                    }
+                while (clientEventHandlingChannel.Reader.TryRead(out var clientEventBody))
+                {
+                    var serverEventBodies = await clientEventHandler.Handle(clientEventBody, cancellationToken);
+                    
+                    await serverEventReceiver.ReceiveServerEvents(sessionId, serverEventBodies, cancellationToken);
                 }
             }
             finally
             {
-                yieldChannel.Writer.Complete();
-
-                // todo: dispose of any other resources associated with the sessionId (from strategies)
+                clientEventHandlingChannel.Writer.Complete();
             }
+        }
+    }
+
+    private static async IAsyncEnumerable<SseItem<ServerEventBody>> Yield(
+        Channel<SseItem<ServerEventBody>> serverEventYieldingChannel,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (!await serverEventYieldingChannel.Reader.WaitToReadAsync(cancellationToken))
+                {
+                    continue;
+                }
+
+                while (serverEventYieldingChannel.Reader.TryRead(out var sseItem))
+                {
+                    yield return sseItem;
+                }
+            }
+        }
+        finally
+        {
+            serverEventYieldingChannel.Writer.Complete();
         }
     }
 }

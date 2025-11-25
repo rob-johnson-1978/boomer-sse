@@ -2,7 +2,7 @@
 
 namespace BoomerSse.InMemory;
 
-public class ClientEventManager : IReceiveClientEvents
+public class ClientEventManager : IReceiveClientEvents, IReceiveServerEvents
 {
     static ClientEventManager()
     {
@@ -13,10 +13,4 @@ public class ClientEventManager : IReceiveClientEvents
     }
 
     public static ClientEventManager Instance { get; } = new();
-    
-    public async Task Receive(Guid sessionId, ClientEventBody clientEventBody, CancellationToken cancellationToken)
-    {
-        // todo: put message on inmem queue?
-        throw new NotImplementedException();
-    }
 }
