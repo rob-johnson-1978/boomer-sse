@@ -4,17 +4,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/demo/">
-    <Project Path="demo/BoomerSse.Demo.AspireHost/BoomerSse.Demo.AspireHost.csproj" />
-    <Project Path="demo/BoomerSse.Demo.Proxy/BoomerSse.Demo.Proxy.csproj" />
-    <Project Path="demo/BoomerSse.Demo/BoomerSse.Demo.csproj" />
-  </Folder>
   <Folder Name="/sln/">
     <File Path="README.md" />
     <File Path=".gitignore" />
   </Folder>
-  <Project Path="src/BoomerSse.Abstractions/BoomerSse.Abstractions.csproj" />
-  <Project Path="src/BoomerSse.InMemory/BoomerSse.InMemory.csproj" />
-  <Project Path="src/BoomerSse.Redis/BoomerSse.Redis.csproj" />
-  <Project Path="src/BoomerSse/BoomerSse.csproj" />
 </Solution>
