@@ -23,7 +23,7 @@ internal class RequestHandlers
     internal static async Task<IResult> Sub(
         [FromServices] IReceiveClientEvents clientEventReceiver,
         [FromServices] IReceiveServerEvents serverEventReceiver,
-        [FromServices] ClientEventHandler clientEventHandler,
+        [FromServices] BoomerSseOptions options,
         [FromQuery(Name = "session_id")] Guid sessionId,
         CancellationToken cancellationToken)
     {
@@ -44,8 +44,8 @@ internal class RequestHandlers
         _ = Task.Run(async () => 
             await HandleClientEvents(
                 sessionId, 
-                clientEventHandlingChannel, 
-                clientEventHandler,
+                clientEventHandlingChannel,
+                options,
                 serverEventReceiver,
                 cancellationToken
             ), cancellationToken
@@ -72,7 +72,7 @@ internal class RequestHandlers
 
     private static async Task HandleClientEvents(Guid sessionId,
         Channel<ClientEventBody> clientEventHandlingChannel,
-        ClientEventHandler clientEventHandler,
+        BoomerSseOptions options,
         IReceiveServerEvents serverEventReceiver,
         CancellationToken cancellationToken)
     {
@@ -87,7 +87,10 @@ internal class RequestHandlers
 
                 while (clientEventHandlingChannel.Reader.TryRead(out var clientEventBody))
                 {
-                    var serverEventBodies = await clientEventHandler.Handle(clientEventBody, cancellationToken);
+                    // todo:
+                    // 1. Find the handler/s in the options, for this clientEventBody.Event (that's the event name)
+                    // 2. Execute each handler, in parallel (await Task.WhenAll)
+                    // 3. Aggregate the results into serverEventBodies
                     
                     await serverEventReceiver.ReceiveServerEvents(sessionId, serverEventBodies, cancellationToken);
                 }

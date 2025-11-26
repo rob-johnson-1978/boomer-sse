@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using BoomerSse.Abstractions;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace BoomerSse;
@@ -33,7 +34,8 @@ public class BoomerSseOptions
         where TEvent : class
         where TEventHandler : IHandleClientEvents<TEvent>
     {
-        // todo: register
+        _hostApplicationBuilder.Services.TryAddScoped(typeof(TEventHandler));
+
         return this;
     }
     
@@ -41,7 +43,8 @@ public class BoomerSseOptions
         where TEvent : class
         where TEventHandler : IHandleClientEventsSynchronously<TEvent>
     {
-        // todo: register
+        _hostApplicationBuilder.Services.TryAddScoped(typeof(TEventHandler));
+        
         return this;
     }
     
