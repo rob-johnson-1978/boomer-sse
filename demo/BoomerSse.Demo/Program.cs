@@ -14,12 +14,14 @@ builder.UseBoomerSse(options =>
         case "InMemory":
             options
                 .UseScaleOutStrategy(new InMemoryScaleOutStrategy())
-                .AddClientEventHandler<SomethingClassicHappened, SomethingClassicHappenedEventHandler>()
-                .AddSynchronousClientEventHandler<SomethingClassicSyncHappened, SomethingClassicSyncHappenedEventHandler>();
+                .AddClientEventHandler<SomethingHappened, SomethingClassicHappenedEventHandlerHandler>("something-happened")
+                .AddSynchronousClientEventHandler<SomethingSyncHappened, SomethingClassicSyncHappenedEventHandler>("something-sync-happened");
             break;
         case "Redis":
             options.UseScaleOutStrategy(new RedisScaleOutStrategy());
-            options.ScanAssemblyForClientEventHandlers(typeof(Program).Assembly); // todo: add static methods (async and sync, no DI - useful for simple tasks eg redirect)
+            options.ScanAssemblyForClientEventHandlers(typeof(Program).Assembly); 
+            // todo: add static methods (async and sync, no DI - useful for simple tasks eg redirect)
+            // todo: use attribute for event name
             break;
         default:
             throw new InvalidOperationException("Unknown value for BSSE_SCALEOUT.");

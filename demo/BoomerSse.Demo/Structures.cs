@@ -1,5 +1,5 @@
 ﻿namespace BoomerSse.Demo;
 
-internal sealed record SomethingClassicHappened;
+internal sealed record SomethingHappened;
 
-internal sealed record SomethingClassicSyncHappened;
+internal sealed record SomethingSyncHappened;

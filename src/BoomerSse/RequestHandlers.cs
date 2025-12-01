@@ -21,6 +21,7 @@ internal class RequestHandlers
     }
 
     internal static async Task<IResult> Sub(
+        [FromServices] IServiceProvider scopedServiceProvider,
         [FromServices] IReceiveClientEvents clientEventReceiver,
         [FromServices] IReceiveServerEvents serverEventReceiver,
         [FromServices] BoomerSseOptions options,
@@ -41,12 +42,13 @@ internal class RequestHandlers
             cancellationToken
         );
 
-        _ = Task.Run(async () => 
+        _ = Task.Run(async () =>
             await HandleClientEvents(
-                sessionId, 
+                sessionId,
                 clientEventHandlingChannel,
                 options,
                 serverEventReceiver,
+                scopedServiceProvider,
                 cancellationToken
             ), cancellationToken
         );
@@ -74,6 +76,7 @@ internal class RequestHandlers
         Channel<ClientEventBody> clientEventHandlingChannel,
         BoomerSseOptions options,
         IReceiveServerEvents serverEventReceiver,
+        IServiceProvider scopedServiceProvider,
         CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -87,11 +90,12 @@ internal class RequestHandlers
 
                 while (clientEventHandlingChannel.Reader.TryRead(out var clientEventBody))
                 {
-                    // todo:
-                    // 1. Find the handler/s in the options, for this clientEventBody.Event (that's the event name)
-                    // 2. Execute each handler, in parallel (await Task.WhenAll)
-                    // 3. Aggregate the results into serverEventBodies
-                    
+                    var serverEventBodies = await options.BuildClientEventHandlingTask(
+                        clientEventBody,
+                        scopedServiceProvider,
+                        cancellationToken
+                    );
+
                     await serverEventReceiver.ReceiveServerEvents(sessionId, serverEventBodies, cancellationToken);
                 }
             }

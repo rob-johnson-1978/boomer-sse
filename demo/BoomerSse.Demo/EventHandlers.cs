@@ -2,17 +2,17 @@
 
 namespace BoomerSse.Demo;
 
-internal sealed class SomethingClassicHappenedEventHandler : IHandleClientEvents<SomethingClassicHappened>
+internal sealed class SomethingClassicHappenedEventHandlerHandler : ClientEventHandler<SomethingHappened>
 {
-    public Task<ServerEventBody> Handle(SomethingClassicHappened @event, CancellationToken cancellationToken)
+    protected override Task<ServerEventBody> Handle(SomethingHappened @event, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
 }
 
-internal sealed class SomethingClassicSyncHappenedEventHandler : IHandleClientEventsSynchronously<SomethingClassicSyncHappened>
+internal sealed class SomethingClassicSyncHappenedEventHandler : SynchronousClientEventHandler<SomethingSyncHappened>
 {
-    public ServerEventBody Handle(SomethingClassicSyncHappened @event)
+    protected override ServerEventBody Handle(SomethingSyncHappened @event)
     {
         throw new NotImplementedException();
     }
