@@ -50,7 +50,7 @@ public class BsseHtmlElementTagHelper : TagHelper
             return;
         }
 
-        output.Attributes.SetAttribute("data-bsse-on", On);
+        output.Attributes.SetAttribute($"on{On}", "publishClientEvent(event)");
         output.Attributes.SetAttribute("data-bsse-event", EventName);
 
         if (!string.IsNullOrWhiteSpace(Message) && Data == null)
