@@ -14,13 +14,22 @@ builder.UseBoomerSse(options =>
         case "InMemory":
             options
                 .UseScaleOutStrategy(new InMemoryScaleOutStrategy())
-                //.AddClientEventHandler<SomethingHappened, SomethingClassicHappenedEventsHandler>("something-happened")
-                //.AddSynchronousClientEventHandler<SomethingSyncHappened, SomethingClassicSyncHappenedEvents>("something-sync-happened");
-                ;
+                .AddClientEventHandler<MainLoaded, MainLoadedHandler>("main_loaded")
+                .AddClientEventHandler<HipHappenedHandler>("hip_happened")
+                .AddClientEventHandler<HipHappenedAgainHandler>("hip_happened_again")
+                .AddClientEventHandler<MainButtonClickedHandler>("main_button_clicked")
+                .AddClientEventHandler<MainButtonClickedAgain, MainButtonClickedAgainHandler>("main_button_clicked_again")
+                .AddClientEventHandler<MainFormSubmitted, MainFormSubmittedHandler>("main_form_submitted")
+                .AddClientEventHandler<MainLoaded, MainLoadedHandler2>("main_loaded")
+                .AddClientEventHandler<HipHappenedHandler2>("hip_happened")
+                .AddClientEventHandler<HipHappenedAgainHandler2>("hip_happened_again")
+                .AddClientEventHandler<MainButtonClickedHandler2>("main_button_clicked")
+                .AddClientEventHandler<MainButtonClickedAgain, MainButtonClickedAgainHandler2>("main_button_clicked_again")
+                .AddClientEventHandler<MainFormSubmitted, MainFormSubmittedHandler2>("main_form_submitted");
             break;
         case "Redis":
             options.UseScaleOutStrategy(new RedisScaleOutStrategy());
-            options.ScanAssemblyForClientEventHandlers(typeof(Program).Assembly); 
+            options.ScanAssemblyForClientEventHandlers(typeof(Program).Assembly);
             // todo: add static methods (async and sync, no DI - useful for simple tasks eg redirect)
             // todo: use attribute for event name
             break;
@@ -29,10 +38,10 @@ builder.UseBoomerSse(options =>
     }
 
     // todo: scan for both types of event handler
-    
-    
+
+
     // todo: register in container / provider
-    
+
 });
 
 var app = builder.Build();

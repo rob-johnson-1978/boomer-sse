@@ -1,9 +1,10 @@
-﻿using System.Collections.Immutable;
-using System.Reflection;
-using BoomerSse.Abstractions;
+﻿using BoomerSse.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using System.Collections.Immutable;
+using System.Reflection;
+using System.Text.Json;
 
 namespace BoomerSse;
 
@@ -38,6 +39,13 @@ public class BoomerSseOptions
         return this;
     }
 
+    public BoomerSseOptions UseAuthentication()
+    {
+        MustUseAuthentication = true;
+
+        return this;
+    }
+
     public BoomerSseOptions AddClientEventHandler<TEvent, TEventHandler>(string eventType)
         where TEvent : class
         where TEventHandler : IHandleClientEvents<TEvent>
@@ -55,13 +63,29 @@ public class BoomerSseOptions
         return this;
     }
 
+    public BoomerSseOptions AddClientEventHandler<TEventHandler>(string eventType)
+        where TEventHandler : IHandleClientEvents<DefaultClientEvent>
+    {
+        _hostApplicationBuilder.Services.TryAddScoped(typeof(TEventHandler));
+
+        if (!_clientEventHandlers.TryGetValue(eventType, out var handlers))
+        {
+            handlers = [];
+            _clientEventHandlers[eventType] = handlers;
+        }
+
+        handlers.Add(BuildClientEventHandlingTaskFunc<DefaultClientEvent, TEventHandler>());
+
+        return this;
+    }
+
     public BoomerSseOptions AddSynchronousClientEventHandler<TEvent, TEventHandler>(string eventType)
         where TEvent : class
         where TEventHandler : ISynchronouslyHandleClientEvents<TEvent>
     {
         _hostApplicationBuilder.Services.TryAddScoped(typeof(TEventHandler));
 
-        if(!_synchronousClientEventHandlers.TryGetValue(eventType, out var syncHandlers))
+        if (!_synchronousClientEventHandlers.TryGetValue(eventType, out var syncHandlers))
         {
             syncHandlers = [];
             _synchronousClientEventHandlers[eventType] = syncHandlers;
@@ -72,12 +96,30 @@ public class BoomerSseOptions
         return this;
     }
 
+    public BoomerSseOptions AddSynchronousClientEventHandler<TEventHandler>(string eventType)
+        where TEventHandler : ISynchronouslyHandleClientEvents<DefaultClientEvent>
+    {
+        _hostApplicationBuilder.Services.TryAddScoped(typeof(TEventHandler));
+
+        if (!_synchronousClientEventHandlers.TryGetValue(eventType, out var syncHandlers))
+        {
+            syncHandlers = [];
+            _synchronousClientEventHandlers[eventType] = syncHandlers;
+        }
+
+        syncHandlers.Add(BuildSynchronousClientEventHandlingTaskFunc<DefaultClientEvent, TEventHandler>());
+
+        return this;
+    }
+
     public BoomerSseOptions ScanAssemblyForClientEventHandlers(Assembly assembly)
     {
         // todo: find handlers, both static and non, both async and sync
 
         return this;
     }
+
+    internal bool MustUseAuthentication { get; private set; }
 
     internal void Validate()
     {
@@ -125,7 +167,7 @@ public class BoomerSseOptions
             handlers = [];
         }
 
-        if(!_synchronousClientEventHandlers.TryGetValue(clientEventBody.Event, out var syncHandlers))
+        if (!_synchronousClientEventHandlers.TryGetValue(clientEventBody.Event, out var syncHandlers))
         {
             syncHandlers = [];
         }
@@ -162,19 +204,11 @@ public class BoomerSseOptions
 
             try
             {
+                var @event = BuildClientEvent<TEvent>(clientEventBody);
 
-                var @event = System.Text.Json.JsonSerializer.Deserialize<TEvent>(
-                    clientEventBody.Data ?? "{}"
-                );
-
-                if (@event == null)
-                {
-                    // todo: log out
-                    return ServerEventBody.Default;
-                }
-
-
-                return await handler.Handle(@event, cancellationToken);
+                return @event == null 
+                    ? ServerEventBody.Default
+                    : await handler.Handle(@event, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -199,19 +233,11 @@ public class BoomerSseOptions
 
             try
             {
+                var @event = BuildClientEvent<TEvent>(clientEventBody);
 
-                var @event = System.Text.Json.JsonSerializer.Deserialize<TEvent>(
-                    clientEventBody.Data ?? "{}"
-                );
-
-                if (@event == null)
-                {
-                    // todo: log out
-                    return ServerEventBody.Default;
-                }
-
-
-                return handler.Handle(@event);
+                return @event == null
+                    ? ServerEventBody.Default
+                    : handler.Handle(@event);
             }
             catch (Exception ex)
             {
@@ -219,4 +245,18 @@ public class BoomerSseOptions
                 return ServerEventBody.Default;
             }
         };
+
+    private static TEvent? BuildClientEvent<TEvent>(ClientEventBody clientEventBody) 
+        where TEvent : class => typeof(TEvent) switch
+    {
+        var t when t == typeof(DefaultClientEvent) =>
+            new DefaultClientEvent(clientEventBody.Message ?? "") as TEvent
+            ?? throw new Exception($"Failed to construct {typeof(TEvent)}"),
+
+        _ when clientEventBody.Data != null =>
+            clientEventBody.Data.Deserialize<TEvent>()
+            ?? throw new Exception($"Failed to deserialize client event data. Type was {typeof(TEvent)}"),
+
+        _ => null
+    };
 }

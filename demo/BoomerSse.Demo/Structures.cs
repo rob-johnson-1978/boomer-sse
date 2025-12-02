@@ -1,9 +1,7 @@
 ﻿namespace BoomerSse.Demo;
 
-internal sealed record HipHappened;
+internal record MainLoaded(DateTime Timestamp);
 
-internal sealed record HipHappenedAgain(string Message);
-
-internal sealed record MainButtonClicked(DateTime? Timestamp);
+internal sealed record MainButtonClickedAgain(DateTime Timestamp);
 
 internal sealed record MainFormSubmitted(string? Prop1, string? Prop2, string? Prop3);

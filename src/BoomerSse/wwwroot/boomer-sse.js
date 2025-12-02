@@ -1,10 +1,10 @@
 ﻿'use strict';
 
-window.bsse = {
+const bsse = {
     publishClientEvent: (e) => {
         e.preventDefault();
-        window.bsse.publishClientEventUsingDataset(e.target.dataset);
-    },    
+        bsse.publishClientEventUsingDataset(e.target.dataset);
+    },
     publishClientEventUsingDataset: (dataset) => {
         const eventName = dataset.bsseEvent;
         if (!eventName) {
@@ -14,29 +14,48 @@ window.bsse = {
         const eventMessage = dataset.bsseMessage;
         const eventData = dataset.bsseData;
 
-        console.log(eventName, eventMessage, eventData);
-        // todo: POST to server
+        fetch('/bsse/pub?session_id=' + BSSE_SESSION_ID, {
+            method: 'POST',
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${BSSE_GET_TOKEN()}`
+            },
+            body: JSON.stringify({
+                event: eventName,
+                message: eventMessage,
+                data: eventData
+            })
+        })
+        .catch(error => {
+            console.error('Error publishing client event: ', error);
+        });
     },
     triggerOnAppears: (root) => {
-        const appearElements = root.querySelectorAll('[onappear]');
-        console.log(appearElements);
+        const appearElements = root.querySelectorAll('[onappear]');        
 
         appearElements.forEach((el) => {
-            window.bsse.publishClientEventUsingDataset(el.dataset);
+            bsse.publishClientEventUsingDataset(el.dataset);
         });
+    },
+    connectToEventSource: () => {
+        const url = `${BSSE_PATH_BASE}/bsse/sub?session_id=${BSSE_SESSION_ID}`;
+
+        const eventSource = new EventSource(url, {
+            withCredentials: true,
+            headers: {
+                'Authorization': `Bearer ${BSSE_GET_TOKEN()}`
+            }
+        });
+
+        eventSource.onmessage = (message) => {
+            console.log("Received message: ", message);
+        };
     },
     defaultGetToken: () => ''
 };
 
-window.addEventListener("DOMContentLoaded", () => {
-    window.bsse.triggerOnAppears(window.document);
-
-    //const url = `${window.BSSE_PATHBASE}/bsse/sub?session_id=${window.BSSE_SESSION_ID}`;
-
-    //const eventSource = new EventSource(url, {
-    //    withCredentials: true,
-    //    headers: {
-    //        'Authorization': `Bearer ${window.BSSE_GET_TOKEN()}`
-    //    }
-    //});
+addEventListener("DOMContentLoaded", () => {
+    bsse.connectToEventSource();
+    bsse.triggerOnAppears(document);
 });

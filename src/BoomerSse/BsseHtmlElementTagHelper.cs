@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Net;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace BoomerSse;
@@ -45,7 +43,7 @@ public class BsseHtmlElementTagHelper : TagHelper
             return;
         }
 
-        output.Attributes.SetAttribute($"on{On}", "window.bsse.publishClientEvent(event)");
+        output.Attributes.SetAttribute($"on{On}", "bsse.publishClientEvent(event)");
         output.Attributes.SetAttribute("data-bsse-event", EventName);
 
         if (!string.IsNullOrWhiteSpace(Message) && Data == null)

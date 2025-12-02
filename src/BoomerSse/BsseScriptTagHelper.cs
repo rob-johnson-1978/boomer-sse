@@ -23,7 +23,7 @@ public class BsseScriptTagHelper(IFileVersionProvider fileVersionProvider) : Tag
     /// <summary>
     /// When set, will be used to get the bearer token. Eg "sessionStorage.getItem('token')"
     /// </summary>
-    public string GetBearerTokenJs { get; set; } = "defaultGetToken()";
+    public string GetBearerTokenJs { get; set; } = "bsse.defaultGetToken()";
 
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
@@ -33,9 +33,9 @@ public class BsseScriptTagHelper(IFileVersionProvider fileVersionProvider) : Tag
         globalVariablesScript.Attributes.Add("type", "text/javascript");
         globalVariablesScript.InnerHtml.AppendHtml(
 $@"
-    window.BSSE_SESSION_ID = '{Guid.NewGuid()}';
-    window.BSSE_PATH_BASE = '{pathBase}';
-    window.BSSE_GET_TOKEN = () => {GetBearerTokenJs};
+    BSSE_SESSION_ID = '{Guid.NewGuid()}';
+    BSSE_PATH_BASE = '{pathBase}';
+    BSSE_GET_TOKEN = () => {GetBearerTokenJs};
 ");
 
         // Create main script tag

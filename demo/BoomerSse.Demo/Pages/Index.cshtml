@@ -2,15 +2,6 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
-
-    var randomObject = new
-    {
-        a = 1,
-        b = new
-        {
-            c = Guid.NewGuid()
-        }
-    };
 }
 
 <h2>Hurro</h2>
@@ -31,8 +22,8 @@
     <button on="click"
             publish="main_button_clicked">Click me</button>
     <button on="click"
-            publish="main_button_clicked" 
-            with-data="@randomObject">Or me</button>
+            publish="main_button_clicked_again" 
+            with-data="@new MainButtonClickedAgain(DateTime.UtcNow)">Or me</button>
 </p>
 <form on="submit" publish="main_form_submitted">
     <p>

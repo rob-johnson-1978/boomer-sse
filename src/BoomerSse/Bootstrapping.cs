@@ -13,23 +13,29 @@ public static class Bootstrapping
         configure(options);
 
         options.Validate();
-        
+
         builder.Services.AddSingleton(options);
 
         builder.WebHost.UseStaticWebAssets();
 
         return builder;
     }
-    
+
     public static WebApplication UseBoomerSse(this WebApplication app)
     {
-        app
-            .MapPost("/bsse/pub", RequestHandlers.Pub)
-            .RequireAuthorization();
+        var pub = app
+             .MapPost("/bsse/pub", RequestHandlers.Pub);
 
-        app
-            .MapGet("/bsse/sub", RequestHandlers.Sub)
-            .RequireAuthorization();
+        var sub = app
+            .MapGet("/bsse/sub", RequestHandlers.Sub);
+
+        var options = app.Services.GetRequiredService<BoomerSseOptions>();
+
+        if (options.MustUseAuthentication)
+        {
+            pub.RequireAuthorization();
+            sub.RequireAuthorization();
+        }
 
         return app;
     }
