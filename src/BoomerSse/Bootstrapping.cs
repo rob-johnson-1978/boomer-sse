@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace BoomerSse;
 
 public static class Bootstrapping
 {
-    public static IHostApplicationBuilder UseBoomerSse(this IHostApplicationBuilder builder, Action<BoomerSseOptions> configure)
+    public static WebApplicationBuilder UseBoomerSse(this WebApplicationBuilder builder, Action<BoomerSseOptions> configure)
     {
         var options = new BoomerSseOptions(builder);
 
@@ -15,6 +15,8 @@ public static class Bootstrapping
         options.Validate();
         
         builder.Services.AddSingleton(options);
+
+        builder.WebHost.UseStaticWebAssets();
 
         return builder;
     }

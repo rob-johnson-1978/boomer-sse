@@ -40,7 +40,7 @@ public class BoomerSseOptions
 
     public BoomerSseOptions AddClientEventHandler<TEvent, TEventHandler>(string eventType)
         where TEvent : class
-        where TEventHandler : ClientEventHandler<TEvent>
+        where TEventHandler : IHandleClientEvents<TEvent>
     {
         _hostApplicationBuilder.Services.TryAddScoped(typeof(TEventHandler));
 
@@ -57,7 +57,7 @@ public class BoomerSseOptions
 
     public BoomerSseOptions AddSynchronousClientEventHandler<TEvent, TEventHandler>(string eventType)
         where TEvent : class
-        where TEventHandler : SynchronousClientEventHandler<TEvent>
+        where TEventHandler : ISynchronouslyHandleClientEvents<TEvent>
     {
         _hostApplicationBuilder.Services.TryAddScoped(typeof(TEventHandler));
 
@@ -149,7 +149,7 @@ public class BoomerSseOptions
     private static Func<IServiceProvider, ClientEventBody, CancellationToken, Task<ServerEventBody>>
         BuildClientEventHandlingTaskFunc<TEvent, TEventHandler>()
         where TEvent : class
-        where TEventHandler : ClientEventHandler<TEvent> =>
+        where TEventHandler : IHandleClientEvents<TEvent> =>
         async (sp, clientEventBody, cancellationToken) =>
         {
             var handler = sp.GetService<TEventHandler>();
@@ -174,7 +174,7 @@ public class BoomerSseOptions
                 }
 
 
-                return await handler.HandleInternal(@event, cancellationToken);
+                return await handler.Handle(@event, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -186,7 +186,7 @@ public class BoomerSseOptions
     private static Func<IServiceProvider, ClientEventBody, ServerEventBody>
         BuildSynchronousClientEventHandlingTaskFunc<TEvent, TEventHandler>()
         where TEvent : class
-        where TEventHandler : SynchronousClientEventHandler<TEvent> =>
+        where TEventHandler : ISynchronouslyHandleClientEvents<TEvent> =>
         (sp, clientEventBody) =>
         {
             var handler = sp.GetService<TEventHandler>();
@@ -211,7 +211,7 @@ public class BoomerSseOptions
                 }
 
 
-                return handler.HandleInternal(@event);
+                return handler.Handle(@event);
             }
             catch (Exception ex)
             {

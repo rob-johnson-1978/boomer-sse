@@ -8,7 +8,7 @@ public class InMemoryScaleOutStrategy : IDecideScaleOutStrategy
 {
     public void Configure(IHostApplicationBuilder builder)
     {
-        builder.Services.AddSingleton(ClientEventManager.Instance);
-        builder.Services.AddSingleton<IReceiveClientEvents>(sp => sp.GetRequiredService<ClientEventManager>());
+        builder.Services.AddSingleton<IReceiveClientEvents>(ClientEventManager.Instance);
+        builder.Services.AddSingleton<IReceiveServerEvents>(ClientEventManager.Instance);
     }
 }

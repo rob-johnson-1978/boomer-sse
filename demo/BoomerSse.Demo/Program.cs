@@ -14,8 +14,9 @@ builder.UseBoomerSse(options =>
         case "InMemory":
             options
                 .UseScaleOutStrategy(new InMemoryScaleOutStrategy())
-                .AddClientEventHandler<SomethingHappened, SomethingClassicHappenedEventHandlerHandler>("something-happened")
-                .AddSynchronousClientEventHandler<SomethingSyncHappened, SomethingClassicSyncHappenedEventHandler>("something-sync-happened");
+                //.AddClientEventHandler<SomethingHappened, SomethingClassicHappenedEventsHandler>("something-happened")
+                //.AddSynchronousClientEventHandler<SomethingSyncHappened, SomethingClassicSyncHappenedEvents>("something-sync-happened");
+                ;
             break;
         case "Redis":
             options.UseScaleOutStrategy(new RedisScaleOutStrategy());

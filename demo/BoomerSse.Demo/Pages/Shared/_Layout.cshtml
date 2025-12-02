@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject IWebHostEnvironment WebHostEnvironment
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -9,11 +10,14 @@
 <body>
 <header>
 </header>
-<main role="main" data-bsse-onready="main_loaded|@DateTime.UtcNow">
+<main role="main"
+      on="load"
+      publish="main_loaded"
+      with-data="@DateTime.UtcNow">
     @RenderBody()
 </main>
 <footer></footer>
-<script src="js/boomer-sse.js" asp-append-version="true"></script>
+<bsse-script no-cache="WebHostEnvironment.IsDevelopment()" />
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
