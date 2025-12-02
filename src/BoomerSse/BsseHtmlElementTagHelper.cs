@@ -11,10 +11,6 @@ namespace BoomerSse;
 [HtmlTargetElement(Attributes = "*")]
 public class BsseHtmlElementTagHelper : TagHelper
 {
-    private static readonly ImmutableArray<string> AllowedJavaScriptEvents = [
-        "click", "load", "submit" // todo: add more events as needed
-    ];
-
     /// <summary>
     /// The JavaScript event that will trigger the publishing of the event
     /// </summary>
@@ -43,24 +39,23 @@ public class BsseHtmlElementTagHelper : TagHelper
     {
         if (
             string.IsNullOrWhiteSpace(On) ||
-            !AllowedJavaScriptEvents.Contains(On) ||
             string.IsNullOrWhiteSpace(EventName)
         )
         {
             return;
         }
 
-        output.Attributes.SetAttribute($"on{On}", "publishClientEvent(event)");
+        output.Attributes.SetAttribute($"on{On}", "window.bsse.publishClientEvent(event)");
         output.Attributes.SetAttribute("data-bsse-event", EventName);
 
         if (!string.IsNullOrWhiteSpace(Message) && Data == null)
         {
-            output.Attributes.SetAttribute("data-bsse-message", WebUtility.HtmlEncode(Message));
+            output.Attributes.SetAttribute("data-bsse-message", Message);
         }
         
         if (Data != null)
         {
-            output.Attributes.SetAttribute("data-bsse-data", WebUtility.HtmlEncode(JsonSerializer.Serialize(Data)));
+            output.Attributes.SetAttribute("data-bsse-data", JsonSerializer.Serialize(Data));
         }
 
         base.Process(context, output);

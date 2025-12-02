@@ -1,4 +1,12 @@
 ﻿@inject IWebHostEnvironment WebHostEnvironment
+@{
+    var randomObject = new
+    {
+        abc="123",
+        date = DateTime.UtcNow,
+        guid = Guid.NewGuid()
+    };
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,9 +19,9 @@
 <header>
 </header>
 <main role="main"
-      on="load"
+      on="appear"
       publish="main_loaded"
-      with-data="@DateTime.UtcNow">
+      with-data="@randomObject">
     @RenderBody()
 </main>
 <footer></footer>
