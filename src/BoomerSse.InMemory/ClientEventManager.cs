@@ -21,6 +21,11 @@ public class ClientEventManager : IReceiveClientEvents, IReceiveServerEvents
     
     public async Task ReceiveClientEvent(Guid sessionId, ClientEventBody clientEventBody, CancellationToken cancellationToken)
     {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         if (_clientEventHandlers.TryGetValue(sessionId, out var handler))
         {
             await handler(clientEventBody);
@@ -30,6 +35,11 @@ public class ClientEventManager : IReceiveClientEvents, IReceiveServerEvents
     public async Task SubscribeToClientEvents(Guid sessionId, Func<ClientEventBody, Task> onClientEventReceived, CancellationToken cancellationToken)
     {
         await Task.CompletedTask;
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
 
         if (!_clientEventHandlers.TryGetValue(sessionId, out _))
         {
@@ -49,6 +59,11 @@ public class ClientEventManager : IReceiveClientEvents, IReceiveServerEvents
 
     public async Task ReceiveServerEvents(Guid sessionId, ImmutableArray<ServerEventBody> serverEventBodies, CancellationToken cancellationToken)
     {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         if (_serverEventHandlers.TryGetValue(sessionId, out var handler))
         {
             foreach (var serverEventBody in serverEventBodies)
@@ -61,6 +76,11 @@ public class ClientEventManager : IReceiveClientEvents, IReceiveServerEvents
     public async Task SubscribeToServerEvents(Guid sessionId, Func<ServerEventBody, Task> onServerEventReceived, CancellationToken cancellationToken)
     {
         await Task.CompletedTask;
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
 
         if (!_serverEventHandlers.TryGetValue(sessionId, out _))
         {

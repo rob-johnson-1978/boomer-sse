@@ -4,23 +4,42 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
 
 namespace BoomerSse;
 
 internal class RequestHandlers
 {
     internal static async Task<IResult> Pub(
+        [FromServices] ILogger<RequestHandlers> logger,
         [FromServices] IReceiveClientEvents clientEventReceiver,
         [FromQuery(Name = "session_id")] Guid sessionId,
         [FromBody] ClientEventBody clientEventBody,
         CancellationToken cancellationToken)
     {
-        await clientEventReceiver.ReceiveClientEvent(sessionId, clientEventBody, cancellationToken);
+        try
+        {
+            await clientEventReceiver.ReceiveClientEvent(sessionId, clientEventBody, cancellationToken);
 
-        return Results.Accepted();
+            return Results.Accepted();
+        }
+        catch (Exception ex)
+        {
+            var problemDetails = new ProblemDetails
+            {
+                Detail = $"{ex.Message}{(ex.InnerException == null ? "" : " " + ex.InnerException.Message)}",
+                Status = 500,
+                Title = "An error occurred while processing the client event"
+            };
+
+            logger.LogError(ex, "An error occurred when the client POSTed an event to the server");
+
+            return Results.Problem(problemDetails);
+        }
     }
 
     internal static async Task<IResult> Sub(
+        [FromServices] ILogger<RequestHandlers> logger,
         [FromServices] IServiceProvider scopedServiceProvider,
         [FromServices] IReceiveClientEvents clientEventReceiver,
         [FromServices] IReceiveServerEvents serverEventReceiver,
@@ -28,60 +47,84 @@ internal class RequestHandlers
         [FromQuery(Name = "session_id")] Guid sessionId,
         CancellationToken cancellationToken)
     {
-        var clientEventHandlingChannel = Channel.CreateUnbounded<ClientEventBody>();
-        var serverEventYieldingChannel = Channel.CreateUnbounded<SseItem<ServerEventBody>>();
+        try
+        {
+            var clientEventHandlingChannel = Channel.CreateUnbounded<ClientEventBody>();
+            var serverEventYieldingChannel = Channel.CreateUnbounded<SseItem<ServerEventBody>>();
 
-        await clientEventReceiver.SubscribeToClientEvents(
-            sessionId,
-            async clientEventBody =>
-            {
-                await clientEventHandlingChannel
-                    .Writer
-                    .WriteAsync(clientEventBody, cancellationToken);
-            },
-            cancellationToken
-        );
-
-        _ = Task.Run(async () =>
-            await HandleClientEvents(
+            await clientEventReceiver.SubscribeToClientEvents(
                 sessionId,
-                clientEventHandlingChannel,
-                options,
-                serverEventReceiver,
-                scopedServiceProvider,
+                async clientEventBody =>
+                {
+                    await clientEventHandlingChannel.Writer.WaitToWriteAsync(cancellationToken);
+
+                    await clientEventHandlingChannel
+                        .Writer
+                        .WriteAsync(clientEventBody, cancellationToken);
+                },
                 cancellationToken
-            ), cancellationToken
-        );
+            );
 
-        await serverEventReceiver.SubscribeToServerEvents(
-            sessionId,
-            async serverEventBody =>
-            {
-                await serverEventYieldingChannel
-                    .Writer
-                    .WriteAsync(
-                        new SseItem<ServerEventBody>(serverEventBody),
+            _ = Task.Run(async () =>
+                    await HandleClientEvents(
+                        logger,
+                        sessionId,
+                        clientEventHandlingChannel,
+                        options,
+                        serverEventReceiver,
+                        scopedServiceProvider,
                         cancellationToken
-                    );
-            },
-            cancellationToken
-        );
+                    )
+                );
 
-        return TypedResults.ServerSentEvents(
-            Yield(serverEventYieldingChannel, cancellationToken)
-        );
+            await serverEventReceiver.SubscribeToServerEvents(
+                sessionId,
+                async serverEventBody =>
+                {
+                    await serverEventYieldingChannel.Writer.WaitToWriteAsync(cancellationToken);
+
+                    await serverEventYieldingChannel
+                        .Writer
+                        .WriteAsync(
+                            new SseItem<ServerEventBody>(serverEventBody),
+                            cancellationToken
+                        );
+                },
+                cancellationToken
+            );
+
+            return TypedResults.ServerSentEvents(
+                Yield(serverEventYieldingChannel, cancellationToken)
+            );
+        }
+        catch (Exception ex)
+        {
+            var problemDetails = new ProblemDetails
+            {
+                Detail = $"{ex.Message}{(ex.InnerException == null ? "" : " " + ex.InnerException.Message)}",
+                Status = 500,
+                Title = "An error occurred while processing the client event"
+            };
+
+            logger.LogError(ex, "An error occurred when the client was connecting to the server for SSE");
+
+            return Results.Problem(problemDetails);
+        }
     }
 
-    private static async Task HandleClientEvents(Guid sessionId,
+    private static async Task HandleClientEvents(
+        ILogger<RequestHandlers> logger,
+        Guid sessionId,
         Channel<ClientEventBody> clientEventHandlingChannel,
         BoomerSseOptions options,
         IReceiveServerEvents serverEventReceiver,
         IServiceProvider scopedServiceProvider,
         CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+
+        try
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
                 if (!await clientEventHandlingChannel.Reader.WaitToReadAsync(cancellationToken))
                 {
@@ -99,11 +142,21 @@ internal class RequestHandlers
                     await serverEventReceiver.ReceiveServerEvents(sessionId, serverEventBodies, cancellationToken);
                 }
             }
-            finally
-            {
-                clientEventHandlingChannel.Writer.Complete();
-            }
         }
+        catch (Exception ex)
+        {
+            if (ex is TaskCanceledException or OperationCanceledException)
+            {
+                return;
+            }
+
+            logger.LogError(ex, "An exception occured during client event processing");
+        }
+        finally
+        {
+            clientEventHandlingChannel.Writer.TryComplete();
+        }
+
     }
 
     private static async IAsyncEnumerable<SseItem<ServerEventBody>> Yield(
@@ -127,7 +180,7 @@ internal class RequestHandlers
         }
         finally
         {
-            serverEventYieldingChannel.Writer.Complete();
+            serverEventYieldingChannel.Writer.TryComplete();
         }
     }
 }

@@ -17,11 +17,11 @@ public static class Bootstrapping
         builder.Services.AddSingleton(options);
 
         builder.WebHost.UseStaticWebAssets();
-
+        
         return builder;
     }
 
-    public static WebApplication UseBoomerSse(this WebApplication app)
+    public static WebApplication MapBoomerSseEndpoints(this WebApplication app)
     {
         var pub = app
              .MapPost("/bsse/pub", RequestHandlers.Pub);

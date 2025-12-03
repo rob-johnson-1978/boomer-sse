@@ -20,12 +20,12 @@ builder.UseBoomerSse(options =>
                 .AddClientEventHandler<MainButtonClickedHandler>("main_button_clicked")
                 .AddClientEventHandler<MainButtonClickedAgain, MainButtonClickedAgainHandler>("main_button_clicked_again")
                 .AddClientEventHandler<MainFormSubmitted, MainFormSubmittedHandler>("main_form_submitted")
-                .AddClientEventHandler<MainLoaded, MainLoadedHandler2>("main_loaded")
-                .AddClientEventHandler<HipHappenedHandler2>("hip_happened")
-                .AddClientEventHandler<HipHappenedAgainHandler2>("hip_happened_again")
-                .AddClientEventHandler<MainButtonClickedHandler2>("main_button_clicked")
-                .AddClientEventHandler<MainButtonClickedAgain, MainButtonClickedAgainHandler2>("main_button_clicked_again")
-                .AddClientEventHandler<MainFormSubmitted, MainFormSubmittedHandler2>("main_form_submitted");
+                .AddSynchronousClientEventHandler<MainLoaded, MainLoadedHandler2>("main_loaded")
+                .AddSynchronousClientEventHandler<HipHappenedHandler2>("hip_happened")
+                .AddSynchronousClientEventHandler<HipHappenedAgainHandler2>("hip_happened_again")
+                .AddSynchronousClientEventHandler<MainButtonClickedHandler2>("main_button_clicked")
+                .AddSynchronousClientEventHandler<MainButtonClickedAgain, MainButtonClickedAgainHandler2>("main_button_clicked_again")
+                .AddSynchronousClientEventHandler<MainFormSubmitted, MainFormSubmittedHandler2>("main_form_submitted");
             break;
         case "Redis":
             options.UseScaleOutStrategy(new RedisScaleOutStrategy());
@@ -46,13 +46,9 @@ builder.UseBoomerSse(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
+app.UseExceptionHandler("/Error");
+
+app.UseHsts();
 
 app.UseHttpsRedirection();
 
@@ -61,9 +57,11 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
+// Map BoomerSse endpoints BEFORE Razor Pages
+app.MapBoomerSseEndpoints();
+
 app.MapRazorPages()
     .WithStaticAssets();
-
-app.UseBoomerSse();
 
 app.Run();
