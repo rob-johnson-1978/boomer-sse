@@ -1,6 +1,6 @@
 ﻿using BoomerSse.Abstractions;
 
-namespace BoomerSse.Demo;
+namespace BoomerSse.Demo.Pages.ScratchPad;
 
 
 internal sealed class MainLoadedHandler(ILogger<MainLoadedHandler> logger) : IHandleClientEvents<MainLoaded>

@@ -1,9 +1,13 @@
 using BoomerSse;
 using BoomerSse.Demo;
+using BoomerSse.Demo.Pages.Home;
+using BoomerSse.Demo.Pages.ScratchPad;
 using BoomerSse.InMemory;
 using BoomerSse.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<MyHomeReadyFunction>();
 
 builder.Services.AddRazorPages();
 
@@ -25,7 +29,8 @@ builder.UseBoomerSse(options =>
                 .AddSynchronousClientEventHandler<HipHappenedAgainHandler2>("hip_happened_again")
                 .AddSynchronousClientEventHandler<MainButtonClickedHandler2>("main_button_clicked")
                 .AddSynchronousClientEventHandler<MainButtonClickedAgain, MainButtonClickedAgainHandler2>("main_button_clicked_again")
-                .AddSynchronousClientEventHandler<MainFormSubmitted, MainFormSubmittedHandler2>("main_form_submitted");
+                .AddSynchronousClientEventHandler<MainFormSubmitted, MainFormSubmittedHandler2>("main_form_submitted")
+                .AddClientEventHandler<HomeReadyHandler>("home_ready");
             break;
         case "Redis":
             options.UseScaleOutStrategy(new RedisScaleOutStrategy());

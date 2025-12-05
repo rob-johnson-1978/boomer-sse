@@ -15,4 +15,6 @@ public interface IReceiveServerEvents
         Func<ServerEventBody, Task> onServerEventReceived, 
         CancellationToken cancellationToken
     );
+
+    Task StopSubscribingToServerEvents(Guid sessionId);
 }

@@ -17,7 +17,9 @@ public static class Bootstrapping
         builder.Services.AddSingleton(options);
 
         builder.WebHost.UseStaticWebAssets();
-        
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IProvideRazorFunctionality, RazorFunctionality>();
+
         return builder;
     }
 

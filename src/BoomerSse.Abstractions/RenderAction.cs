@@ -5,6 +5,7 @@ public enum RenderAction
     Append,
     Prepend,
     Replace,
-    None,
-    Redirect
+    Insert,
+    Redirect,
+    None
 }

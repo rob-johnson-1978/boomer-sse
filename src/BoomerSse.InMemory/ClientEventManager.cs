@@ -45,16 +45,13 @@ public class ClientEventManager : IReceiveClientEvents, IReceiveServerEvents
         {
             _clientEventHandlers.TryAdd(sessionId, onClientEventReceived);
         }
+    }
 
-        _ = Task.Run(async () =>
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                await Task.Delay(1000, cancellationToken);
-            }
+    public async Task StopSubscribingToClientEvents(Guid sessionId)
+    {
+        await Task.CompletedTask;
 
-            _clientEventHandlers.TryRemove(sessionId, out _);
-        }, cancellationToken);
+        _clientEventHandlers.TryRemove(sessionId, out _);
     }
 
     public async Task ReceiveServerEvents(Guid sessionId, ImmutableArray<ServerEventBody> serverEventBodies, CancellationToken cancellationToken)
@@ -86,15 +83,12 @@ public class ClientEventManager : IReceiveClientEvents, IReceiveServerEvents
         {
             _serverEventHandlers.TryAdd(sessionId, onServerEventReceived);
         }
+    }
 
-        _ = Task.Run(async () =>
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                await Task.Delay(1000, cancellationToken);
-            }
+    public async Task StopSubscribingToServerEvents(Guid sessionId)
+    {
+        await Task.CompletedTask;
 
-            _serverEventHandlers.TryRemove(sessionId, out _);
-        }, cancellationToken);
+        _serverEventHandlers.TryRemove(sessionId, out _);
     }
 }

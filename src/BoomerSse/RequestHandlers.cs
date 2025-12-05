@@ -43,7 +43,6 @@ internal class RequestHandlers
         [FromServices] IServiceProvider scopedServiceProvider,
         [FromServices] IReceiveClientEvents clientEventReceiver,
         [FromServices] IReceiveServerEvents serverEventReceiver,
-        [FromServices] BoomerSseOptions options,
         [FromQuery(Name = "session_id")] Guid sessionId,
         CancellationToken cancellationToken)
     {
@@ -56,11 +55,17 @@ internal class RequestHandlers
                 sessionId,
                 async clientEventBody =>
                 {
-                    await clientEventHandlingChannel.Writer.WaitToWriteAsync(cancellationToken);
+                    if (cancellationToken.IsCancellationRequested) return;
 
-                    await clientEventHandlingChannel
-                        .Writer
-                        .WriteAsync(clientEventBody, cancellationToken);
+                    try
+                    {
+                        await clientEventHandlingChannel.Writer.WaitToWriteAsync(cancellationToken);
+                        await clientEventHandlingChannel.Writer.WriteAsync(clientEventBody, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected when cancelling
+                    }
                 },
                 cancellationToken
             );
@@ -70,28 +75,44 @@ internal class RequestHandlers
                         logger,
                         sessionId,
                         clientEventHandlingChannel,
-                        options,
                         serverEventReceiver,
                         scopedServiceProvider,
                         cancellationToken
-                    )
+                    ),
+                    cancellationToken
                 );
 
             await serverEventReceiver.SubscribeToServerEvents(
                 sessionId,
                 async serverEventBody =>
                 {
-                    await serverEventYieldingChannel.Writer.WaitToWriteAsync(cancellationToken);
+                    if (cancellationToken.IsCancellationRequested) return;
 
-                    await serverEventYieldingChannel
-                        .Writer
-                        .WriteAsync(
+                    try
+                    {
+                        await serverEventYieldingChannel.Writer.WaitToWriteAsync(cancellationToken);
+                        await serverEventYieldingChannel.Writer.WriteAsync(
                             new SseItem<ServerEventBody>(serverEventBody),
                             cancellationToken
                         );
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected when cancelling
+                    }
                 },
                 cancellationToken
             );
+
+            // Clean up when connection ends
+            cancellationToken.Register(async () =>
+            {
+                await clientEventReceiver.StopSubscribingToClientEvents(sessionId);
+                await serverEventReceiver.StopSubscribingToServerEvents(sessionId);
+
+                clientEventHandlingChannel.Writer.TryComplete();
+                serverEventYieldingChannel.Writer.TryComplete();
+            });
 
             return TypedResults.ServerSentEvents(
                 Yield(serverEventYieldingChannel, cancellationToken)
@@ -116,24 +137,22 @@ internal class RequestHandlers
         ILogger<RequestHandlers> logger,
         Guid sessionId,
         Channel<ClientEventBody> clientEventHandlingChannel,
-        BoomerSseOptions options,
         IReceiveServerEvents serverEventReceiver,
         IServiceProvider scopedServiceProvider,
         CancellationToken cancellationToken)
     {
-
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (!await clientEventHandlingChannel.Reader.WaitToReadAsync(cancellationToken))
                 {
-                    continue;
+                    break; // Channel closed
                 }
 
                 while (clientEventHandlingChannel.Reader.TryRead(out var clientEventBody))
                 {
-                    var serverEventBodies = await options.BuildClientEventHandlingTask(
+                    var serverEventBodies = await Handling.BuildClientEventHandlingTask(
                         clientEventBody,
                         scopedServiceProvider,
                         cancellationToken
@@ -156,7 +175,6 @@ internal class RequestHandlers
         {
             clientEventHandlingChannel.Writer.TryComplete();
         }
-
     }
 
     private static async IAsyncEnumerable<SseItem<ServerEventBody>> Yield(
@@ -167,9 +185,16 @@ internal class RequestHandlers
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (!await serverEventYieldingChannel.Reader.WaitToReadAsync(cancellationToken))
+                try
                 {
-                    continue;
+                    if (!await serverEventYieldingChannel.Reader.WaitToReadAsync(cancellationToken))
+                    {
+                        break;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
                 }
 
                 while (serverEventYieldingChannel.Reader.TryRead(out var sseItem))
